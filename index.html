@@ -791,7 +791,7 @@ body{line-height:1.75}
    ========================================================================== */
 (function(){
   var C = null, Q = [], timer = null, sess = Math.random().toString(36).slice(2, 10), t0 = Date.now();
-  var pulsesShown = 0, lastPulse = -1e9, asked = {}, lastKey = "", bubble = null, hideT = null;
+  var pulsesShown = 0, lastPulse = -1e9, asked = {}, lastKey = "", lastData = null, bubble = null, hideT = null;
   function ls(k, v){ try{ if(v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); }catch(e){ return null; } }
   function tester(){
     var m = /[?&#]t=([^&#]+)/.exec(location.search + location.hash), t;
@@ -844,12 +844,12 @@ body{line-height:1.75}
       C.tester = tester();
       push(row("start", "start", {ua:navigator.userAgent.slice(0, 120), w:innerWidth, h:innerHeight, ref:document.referrer.slice(0, 80)}));
       flush();
-      var leave = function(){ Q.push(row("exit", lastKey, {visible_s:Math.round((Date.now() - t0) / 1000)})); flush(true); };
+      var leave = function(){ Q.push(row("exit", lastKey, {last:lastData, visible_s:Math.round((Date.now() - t0) / 1000)})); flush(true); };
       document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "hidden") leave(); });
       addEventListener("pagehide", leave);
       return C.tester;
     },
-    event:function(key, data){ if(!C) return; lastKey = key; push(row("event", key, data)); },
+    event:function(key, data){ if(!C) return; lastKey = key; lastData = data || null; push(row("event", key, data)); },
     pulse:function(key, o){
       if(!C || asked[key] || pulsesShown >= C.maxPulses || Date.now() - lastPulse < C.gapMs) return false;
       asked[key] = 1;
