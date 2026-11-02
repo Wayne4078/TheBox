@@ -554,6 +554,12 @@ body{font-size:17.5px}
 .also{list-style:none;margin:14px 0 0;padding:8px 0 0;border-top:1px dashed rgba(36,32,26,.32);display:flex;flex-direction:column;gap:4px;font-size:13px;color:#4A4034}
 .also li{display:flex;justify-content:space-between;gap:10px;line-height:1.35}.also b{font-weight:600;white-space:nowrap}
 .page.back .also{font-size:15.5px;margin-top:18px}
+.flip-gap{flex:1}
+.page .clip-w + .clip-w{margin-top:-4px}
+.idcard .hl{margin:10px 0 8px;font-size:19px;font-weight:700}
+.idrows{margin:0;display:flex;flex-direction:column;gap:8px}
+.idrows div{display:grid;grid-template-columns:5.4em 1fr;gap:8px;font-size:14.5px;line-height:1.45;border-bottom:1px dotted rgba(36,32,26,.35);padding-bottom:6px}
+.idrows dt{color:#5E5242;font-size:13px}.idrows dd{margin:0}
 /* ===== 사진기를 크게, 테두리는 얇게 (11/1): 그림이 주인공 ===== */
 /* 얇은 틀(obscura_thin): 유리 창 = 정확히 87.6%, 모든 상자 화면이 이 하나를 기준으로 */
 .box{width:min(96%,52vh)}
@@ -612,7 +618,7 @@ body{font-size:17.5px}
     <div class="mono-slot" id="ms-album"><p class="mono tail-r" id="m-album" aria-live="polite"></p></div>
     <div class="pager" id="a-pager">
       <button class="icon-btn" id="a-prev" type="button" aria-label="이전 장"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.6 4.4 L7.6 12.3 L15.9 19.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button class="flip" id="a-flip" type="button">실제 숫자 보기</button>
+      <span class="flip-gap" aria-hidden="true"></span>
       <button class="icon-btn" id="a-next" type="button" aria-label="다음 장"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.4 4.4 L16.4 12.3 L8.1 19.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
     <div style="margin-top:22px" id="a-end" hidden>
@@ -664,7 +670,7 @@ body{font-size:17.5px}
     <div class="mono-slot" id="ms-result"><p class="mono tail-r" id="m-result" aria-live="polite"></p></div>
     <div class="pager" id="r-pager">
       <button class="icon-btn" id="r-prev" type="button" aria-label="이전 장"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.6 4.4 L7.6 12.3 L15.9 19.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button class="flip" id="r-flip" type="button">실제 숫자 보기</button>
+      <span class="flip-gap" aria-hidden="true"></span>
       <button class="icon-btn" id="r-next" type="button" aria-label="다음 장"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.4 4.4 L16.4 12.3 L8.1 19.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
     <p class="next-cross" id="r-next-line">다음 갈림길은 열두 살 무렵에 온다.</p>
@@ -885,6 +891,10 @@ body{font-size:17.5px}
 
   /* album pages: every number is from the Senegal data table v0.1 */
   var ALBUM = [
+    {year:"2018", intro:true,
+     rows:[["이름","아미나타"],["태어난 해","2018년"],["태어난 곳","세네갈 티에스 지방, 바누 마을"],["가족","땅콩 농사를 짓는 아빠, 시장에서 생선을 파는 엄마, 오빠 둘"],["집","흙벽 마당집. 할머니, 삼촌네까지 한 마당에 산다"]],
+     note:["세네갈은 아프리카 서쪽 끝, 대서양에 닿은 나라다.","아미나타는 지어낸 아이지만,","이 아이가 겪는 일은 그곳 아이들이 실제로 겪는 일이다."],
+     back:{kind:"bars", lbl:"한 집에 함께 사는 사람 수 (평균)", rows:[["농촌",9.5],["도시",7.5]], unit:"명", max:10, s:"2023 · 세네갈 인구보건조사(EDS)"}},
     {year:"2018 · 0살", pic:{scene:"birth", old:true},
      note:["아미나타.","티에스 지방 바누에서 태어났다.","오빠 둘. 아빠는 땅콩 농사를 짓는다."],
      back:{kind:"dots", big:"70.7", unit:"%", lbl:"세네갈 농촌에서 출생이 등록된 5세 미만 아이", fill:7, note:"열 명 중 일곱", s:"2019 · UNICEF 세계아동현황"}},
@@ -1458,8 +1468,8 @@ body{font-size:17.5px}
   var MONO = {
     "s-box":{slot:"m-box", lit:["g-wrap","p-note","b-open"], reveal:{1:"p-note", 2:function(){ $("s-box").classList.add("t3"); }}, delay:7400, lines:["이건… 무슨 상자지?","쪽지가 한 장 끼워져 있다.","열어 볼까."], nudge:"b-open"},
     "s-lens":{slot:"m-lens", lit:["lens-box","b-album"], delay:4100, lines:["안쪽 유리에 뭔가 비친다.","…아이다. 어디로 걸어가는 거지?","같이 온 앨범을 넘겨 보면 알 수 있을까."], nudge:"b-album"},
-    "s-album":{slot:"m-album", lit:["ms-album","a-page","a-pager"], delay:1300, lines:["그 아이의 앨범이다.","한 장씩 넘겨 보자. 뒷면에도 뭔가 적혀 있다."], nudge:"a-next"},
-    "album-sib":{slot:"m-album", lit:["ms-album","a-page","a-pager"], delay:1500, lines:["…동생은 어떻게 됐을까?","뒷면에 뭔가 적혀 있다."], nudge:"a-flip"},
+    "s-album":{slot:"m-album", lit:["ms-album","a-page","a-pager"], delay:1300, lines:["그 아이의 앨범이다.","한 장씩 넘겨 보자. 사진 아래엔 그해의 실제 숫자가 붙어 있다."], nudge:"a-next"},
+    "album-sib":{slot:"m-album", lit:["ms-album","a-page","a-pager"], delay:1500, lines:["…동생은 어떻게 됐을까?","아래 숫자가 말해 주는 것 같다."], nudge:"a-next"},
     "album-end":{slot:"m-album", lit:["ms-album","a-end"], delay:900, lines:["여기까지가 지금까지다.","해가 지면, 다시 들여다보자."], nudge:"b-dusk"},
     "s-result":{slot:"m-result", lit:["ms-result","r-page","r-pager"], delay:2400, lines:["다음 날 아침의 그림이다.","몇 주 뒤도 넘겨 볼 수 있다."], nudge:"r-next"},
     "s-end":{slot:"m-end", lit:["ms-end","slips"], delay:2600, lines:["한 사람의 일생이 한 장에 들어간다.","다음 사람에게,\u00a0한\u00a0줄을 남길 수 있다."], nudge:null},
@@ -1534,6 +1544,7 @@ body{font-size:17.5px}
   }
   function noteHTML(lines, extra){ return '<div class="note-w'+(extra?' '+extra:'')+'"><div class="note">'+lines.map(function(l){return '<p>'+esc(l)+'</p>';}).join("")+'</div></div>'; }
   /* newspaper clippings: news on the front, numbers on the back */
+  var INTRO_MAST = "앨범 첫 장", INTRO_TTL = "이 앨범의 주인";
   function mast(right){ return '<div class="mast"><span class="name">바누 소식지</span><span>'+esc(right)+'</span></div>'; }
   function newsHTML(n){
     return '<div class="clip-w"><div class="clip">'+mast(n.date)+'<p class="hl">'+esc(n.hd)+'</p><div class="cols">'+esc(n.body)+'</div></div></div>';
@@ -1576,25 +1587,28 @@ body{font-size:17.5px}
   var ai = 0, aFlipped = false;
   function renderAlbum(){
     var e = ALBUM[ai], h = '';
-    if(aFlipped){ h += factHTML(e.back); }
-    else {
+    if(e.intro){
+      h += '<div class="clip-w"><div class="clip idcard">'+mast(INTRO_MAST)+'<p class="hl">'+esc(INTRO_TTL)+'</p><dl class="idrows">'
+        + e.rows.map(function(r){ return '<div><dt>'+esc(r[0])+'</dt><dd>'+esc(r[1])+'</dd></div>'; }).join("") + '</dl></div></div>';
+      h += noteHTML(e.note);
+    } else {
       if(e.pic) h += picHTML(e.pic,false);
       if(e.scrap) h += newsHTML(e.scrap);
       h += noteHTML(e.note);
     }
+    /* 11/2: 뒤집지 않고 실제 숫자를 바로 아래에 붙인다 */
+    if(e.back) h += factHTML(e.back);
     $("a-page").innerHTML = h;
-    $("a-page").classList.toggle("back", aFlipped);
     $("a-year").textContent = e.year;
     $("a-count").textContent = (ai+1)+" / "+ALBUM.length;
     $("a-prev").disabled = ai===0;
     $("a-next").disabled = ai===ALBUM.length-1;
-    $("a-flip").textContent = aFlipped ? "앞면 보기" : "실제 숫자 보기";
     $("a-end").hidden = ai !== ALBUM.length-1;
   }
   function settleAlbum(){ $("a-page").classList.remove("still"); renderAlbum(); }
   $("a-prev").onclick = function(){ if(ai>0){ai--;aFlipped=false;settleAlbum();} };
   $("a-next").onclick = function(){ if(ai<ALBUM.length-1){ai++;aFlipped=false;settleAlbum(); $("a-next").classList.remove("nudge"); if(ai===ALBUM.length-1){ clearMono(); runMono("album-end"); } else if(ALBUM[ai].pic && ALBUM[ai].pic.empty){ clearMono(); runMono("album-sib"); } } };
-  $("a-flip").onclick = function(){ $("a-flip").classList.remove("nudge"); aFlipped=!aFlipped; turn($("a-page"), renderAlbum); };
+
 
   /* the crossroads: one engine for every age */
   var outcome = null, rFlipped = false, rp = 0, log = [], busy = false;
@@ -1667,8 +1681,7 @@ body{font-size:17.5px}
 
   function renderResult(){
     var X = CROSS[ci], r = X.results[outcome], h = '';
-    if(rFlipped){ h += factHTML(r.back); }
-    else if(rp === 0){
+    if(rp === 0){
       var lw = lastWord || {}, stamp;
       if(lw.c === "C") stamp = "말없이 혼자 정했다";
       else if(lw.followed && lw.kept) stamp = "네 말을 따랐다";
@@ -1677,20 +1690,19 @@ body{font-size:17.5px}
       else stamp = "흘려들었다 · 다른 길을 골랐다";
       var card = picHTML(r.pic, lw.c && lw.c !== "C").replace(/<\/div>$/, '<span class="stamp">'+esc(stamp)+'</span></div>');
       h += card + noteHTML(lw.why ? r.note.concat([lw.why]) : r.note);
+      if(r.back) h += factHTML(r.back);
     }
     else { h += noteHTML(r.later, "late"); }
     $("r-page").innerHTML = h;
-    $("r-page").classList.toggle("back", rFlipped);
     $("r-year").textContent = X.year;
     $("r-sub").textContent = rp ? X.sub : "다음 날 아침";
     var nx = nextIndex(ci);
     $("r-next-line").textContent = nx < 0 ? "남은 날들은 앨범이 기억한다." : NEXT_FMT.replace("{a}", AGE_WORD[CROSS[nx].age]);
     $("b-next").textContent = nx < 0 ? "생애의 끝을 본다" : "다음 빛을 기다린다";
     $("r-prev").disabled = rp === 0; $("r-next").disabled = rp === 1;
-    $("r-flip").textContent = rFlipped ? "앞면 보기" : "실제 숫자 보기";
     $("engine-list").innerHTML = log.map(function(l){return '<li>'+esc(l)+'</li>';}).join("");
   }
-  $("r-flip").onclick = function(){ rFlipped=!rFlipped; turn($("r-page"), renderResult); };
+
   $("r-prev").onclick = function(){ if(rp>0){ rp=0; rFlipped=false; $("r-page").classList.remove("still"); renderResult(); } };
   $("r-next").onclick = function(){ if(rp<1){ rp=1; rFlipped=false; clearMono(); $("r-page").classList.remove("still"); renderResult(); } };
 
