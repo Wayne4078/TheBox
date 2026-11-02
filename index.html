@@ -741,6 +741,8 @@ body{line-height:1.75}
     <div class="album-head"><span class="t">ความรู้สึกหลังเล่น</span><span class="y">ใช้เวลาแค่ 1 นาที</span></div>
     <p class="album-sub">คำตอบจะส่งถึงคนทำเกมนี้เท่านั้น</p>
     <div class="fb">
+      <p class="fq">ชื่อหรือชื่อเล่น</p>
+      <input class="fta" id="f-name" maxlength="30" autocomplete="nickname" style="min-height:44px">
       <p class="fq">เล่นจบแล้ว รู้สึกอย่างไรบ้าง</p>
       <div class="fchips" id="f-mood">
         <button type="button" class="fchip">อบอุ่น</button>
@@ -768,7 +770,7 @@ body{line-height:1.75}
       <p class="fq">มีคำหรือประโยคไหนที่แปลกหรือแปลไม่เป็นธรรมชาติไหม</p>
       <textarea class="fta" id="f-words" rows="2" placeholder="ถ้าไม่มี เว้นว่างไว้ได้"></textarea>
     </div>
-    <button class="btn" id="b-line" type="button" style="margin-top:22px">ส่งทาง LINE</button>
+    <button class="btn" id="b-line" type="button" style="margin-top:22px">ส่ง</button>
     <button class="btn demo" id="b-copy" type="button" style="margin-top:4px">คัดลอก</button>
     <textarea class="fta fout" id="f-out" rows="8" readonly hidden></textarea>
     <p class="fdone" id="f-done" hidden>ขอบคุณนะ คำตอบนี้จะช่วยสร้างเวอร์ชันต่อไป</p>
@@ -777,6 +779,112 @@ body{line-height:1.75}
 
 </div>
 
+<script>/* ==========================================================================
+   Playtest Kit v1 (아린 플레이 공용) — 소수 테스터에게서 최대한 뽑아내기
+   - PT.init({game, build, lang, endpoint, key, maxPulses, gapMs, strings})
+   - PT.event(key, data)          진행 기록 (화면, 선택, 끝) — 묶어서 보냄
+   - PT.pulse(key, {q, opts, delay}) 감정이 살아 있을 때 한 번 탭으로 묻는 말풍선
+   - PT.survey(key, answers)      끝 설문을 바로 전송 (복사·붙여넣기 없음)
+   - 자동: 시작, 화면을 떠날 때(이탈 지점) 기록, 실패하면 이 기기에 모았다가 다시 보냄
+   - 테스터 이름: 주소 뒤 ?t=이름 으로 주거나 끝 설문의 별명 칸
+   - ?dev 가 붙으면 tester 앞에 dev: 를 붙여 실제 테스트와 섞이지 않게
+   ========================================================================== */
+(function(){
+  var C = null, Q = [], timer = null, sess = Math.random().toString(36).slice(2, 10), t0 = Date.now();
+  var pulsesShown = 0, lastPulse = -1e9, asked = {}, lastKey = "", bubble = null, hideT = null;
+  function ls(k, v){ try{ if(v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); }catch(e){ return null; } }
+  function tester(){
+    var m = /[?&#]t=([^&#]+)/.exec(location.search + location.hash), t;
+    if(m){ t = decodeURIComponent(m[1]).slice(0, 30); ls("pt_tester", t); }
+    t = t || ls("pt_tester");
+    if(!t){ t = "anon-" + Math.random().toString(36).slice(2, 7); ls("pt_tester", t); }
+    if(/[?&#]dev\b/.test(location.search + location.hash) || document.documentElement.classList.contains("dev")) t = "dev:" + t;
+    return t;
+  }
+  function row(kind, key, data){
+    return {game:C.game, build:C.build, lang:C.lang, tester:C.tester, session:sess, kind:kind,
+            key:(key || "").slice(0, 60), t_ms:Date.now() - t0, data:data || null};
+  }
+  function push(r){ Q.push(r); if(!timer) timer = setTimeout(flush, 8000); }
+  function send(rows, beacon){
+    if(!C || !C.endpoint || !rows.length) return Promise.resolve(true);
+    var url = C.endpoint + "/rest/v1/playtest_log", body = JSON.stringify(rows);
+    try{
+      return fetch(url, {method:"POST", keepalive:!!beacon && body.length < 60000,
+        headers:{"apikey":C.key, "Authorization":"Bearer " + C.key, "Content-Type":"application/json", "Prefer":"return=minimal"},
+        body:body}).then(function(r){ return r.ok; }, function(){ return false; });
+    }catch(e){ return Promise.resolve(false); }
+  }
+  function stash(rows){ try{ var o = JSON.parse(ls("pt_outbox") || "[]"); ls("pt_outbox", JSON.stringify(o.concat(rows).slice(-300))); }catch(e){} }
+  function flush(beacon){
+    clearTimeout(timer); timer = null;
+    var rows = Q.splice(0);
+    try{ var o = JSON.parse(ls("pt_outbox") || "[]"); if(o.length){ rows = o.concat(rows); ls("pt_outbox", "[]"); } }catch(e){}
+    if(!rows.length) return Promise.resolve(true);
+    return send(rows, beacon).then(function(ok){ if(!ok) stash(rows); return ok; });
+  }
+  function css(){
+    if(document.getElementById("pt-css")) return;
+    var s = document.createElement("style"); s.id = "pt-css";
+    s.textContent = ".pt-bub{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));translate:-50% 12px;width:min(92vw,400px);box-sizing:border-box;z-index:9000;"
+      + "background:var(--pt-bg,#F3ECDD);color:var(--pt-ink,#2A241C);border-radius:18px;padding:14px 16px 12px;box-shadow:0 10px 34px rgba(0,0,0,.45);opacity:0;transition:opacity .45s ease,translate .45s ease;font:inherit}"
+      + ".pt-bub.on{opacity:1;translate:-50% 0}.pt-q{margin:0 26px 10px 0;font-size:16px;line-height:1.4}"
+      + ".pt-x{position:absolute;right:8px;top:6px;width:32px;height:32px;border:0;background:none;color:inherit;opacity:.5;font-size:18px;cursor:pointer}"
+      + ".pt-opts{display:flex;flex-wrap:wrap;gap:7px}.pt-o{border:1px solid rgba(42,36,28,.35);background:transparent;color:inherit;border-radius:999px;padding:9px 13px;font:inherit;font-size:14.5px;cursor:pointer;min-height:40px}"
+      + ".pt-o:active{background:rgba(42,36,28,.12)}.pt-thx{margin:0;font-size:15px;opacity:.8}"
+      + "@media (prefers-reduced-motion:reduce){.pt-bub{transition:none}}";
+    document.head.appendChild(s);
+  }
+  function close(){ if(!bubble) return; var b = bubble; bubble = null; clearTimeout(hideT); b.classList.remove("on"); setTimeout(function(){ b.remove(); }, 500); }
+  var PT = {
+    init:function(o){
+      C = {game:o.game, build:o.build || "", lang:o.lang || document.documentElement.lang || "", endpoint:o.endpoint, key:o.key,
+           maxPulses:o.maxPulses || 3, gapMs:o.gapMs === undefined ? 180000 : o.gapMs, linger:o.linger || 14000,
+           S:Object.assign({skip:"×", thanks:"고마워요."}, o.strings || {})};
+      C.tester = tester();
+      push(row("start", "start", {ua:navigator.userAgent.slice(0, 120), w:innerWidth, h:innerHeight, ref:document.referrer.slice(0, 80)}));
+      flush();
+      var leave = function(){ Q.push(row("exit", lastKey, {visible_s:Math.round((Date.now() - t0) / 1000)})); flush(true); };
+      document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "hidden") leave(); });
+      addEventListener("pagehide", leave);
+      return C.tester;
+    },
+    event:function(key, data){ if(!C) return; lastKey = key; push(row("event", key, data)); },
+    pulse:function(key, o){
+      if(!C || asked[key] || pulsesShown >= C.maxPulses || Date.now() - lastPulse < C.gapMs) return false;
+      asked[key] = 1;
+      setTimeout(function(){
+        if(bubble || document.visibilityState === "hidden") return;
+        css(); pulsesShown++; lastPulse = Date.now();
+        var b = document.createElement("div"); b.className = "pt-bub"; b.setAttribute("role", "dialog"); b.setAttribute("aria-live", "polite");
+        var q = document.createElement("p"); q.className = "pt-q"; q.textContent = o.q; b.appendChild(q);
+        var x = document.createElement("button"); x.type = "button"; x.className = "pt-x"; x.textContent = C.S.skip; x.setAttribute("aria-label", "skip");
+        x.onclick = function(){ push(row("pulse", key, {skipped:1, ctx:o.ctx || null})); close(); }; b.appendChild(x);
+        var w = document.createElement("div"); w.className = "pt-opts";
+        o.opts.forEach(function(t, i){
+          var btn = document.createElement("button"); btn.type = "button"; btn.className = "pt-o"; btn.textContent = t;
+          btn.onclick = function(ev){
+            ev.stopPropagation();
+            push(row("pulse", key, {a:t, i:i, ms:Date.now() - lastPulse, ctx:o.ctx || null})); flush();
+            b.innerHTML = ""; var th = document.createElement("p"); th.className = "pt-thx"; th.textContent = C.S.thanks; b.appendChild(th);
+            clearTimeout(hideT); hideT = setTimeout(close, 900);
+          };
+          w.appendChild(btn);
+        });
+        b.appendChild(w); document.body.appendChild(b); bubble = b;
+        requestAnimationFrame(function(){ b.classList.add("on"); });
+        hideT = setTimeout(function(){ push(row("pulse", key, {ignored:1, ctx:o.ctx || null})); close(); }, C.linger);
+      }, o.delay || 0);
+      return true;
+    },
+    survey:function(key, answers){ if(!C) return Promise.resolve(false); Q.push(row("survey", key, answers)); return flush(); },
+    flush:flush,
+    tester:function(){ return C && C.tester; },
+    closeBubble:close
+  };
+  window.PT = PT;
+})();
+</script>
 <script>
 (function(){
   /* test scenes: Recraft layers (background + figure + prop) multiplied together like layered watercolor */
@@ -1428,6 +1536,7 @@ body{line-height:1.75}
     window.scrollTo(0,0);
     if(id === "s-lens"){ var l=$("lens-box"); l.classList.remove("approach"); void l.offsetWidth; l.classList.add("approach"); }
     if(id === "s-q"){ resetQuestion(); if(typeof saveLife === "function") saveLife(); }
+    if(window.PT) ptScreen(id);
     if(id === "s-end"){ if(typeof clearSave === "function"){ if(mark){ played += Date.now() - mark; mark = null; } clearSave(); } }
     clearMono(); runMono(id);
     if(typeof sceneSound === "function") sceneSound(id);
@@ -1553,6 +1662,7 @@ body{line-height:1.75}
     lastWord = {age:X.age, ci:ci, c:c, word: c === "C" ? null : ch[c], followed:f, kept:kept, alt: kept === false ? alt : null,
                 why: (c !== "C" && kept === false) ? X.why(c, outcome) : null};
     WORDS.push(lastWord);
+    if(window.PT) PT.event("choice", {age:X.age, c:c, out:outcome, f:f, kept:kept});
     st.trust = Math.max(0, Math.min(100, st.trust + (c === "C" ? -2 : (f && kept) ? 8 : f ? -3 : 0)));
     log.push("ความเชื่อใจในเสียงลม " + st.trust + " / 100");
     $("w2-text").textContent = c === "C" ? "อีกฟากของรูเงียบสงัด" : "คำพูดข้ามผ่านรูไปแล้ว";
@@ -1717,7 +1827,7 @@ body{line-height:1.75}
       return w.age + w.c + (w.c === "C" ? "-" : w.followed ? (w.kept ? "✓" : "△") : (w.kept ? "○" : "✗"));
     }).join(" ");
     var mins = Math.max(1, Math.round(playedMs() / 60000));
-    var L = ["[อีกฟากของกล่อง · ความรู้สึกหลังเล่น]",
+    var L = ["[อีกฟากของกล่อง · ความรู้สึกหลังเล่น]", "ชื่อ: " + ($("f-name").value.trim() || "-"),
       "ชีวิต: 2018~" + (2018 + (st.deathAge || 0)) + " (" + (st.deathAge || "-") + ") · " + mins + " min",
       "เส้นทางที่ผ่านมา: " + (path || "-") + "  (✓ทำตาม △ถูกขัด ○ทางเดียวกัน ✗ทางอื่น -เงียบ)",
       "โน้ตที่ทิ้งไว้: " + (FB.slip || "-"),
@@ -1732,13 +1842,48 @@ body{line-height:1.75}
   }
   function showOut(t){ var o = $("f-out"); o.value = t; o.hidden = false; try{ o.focus(); o.select(); }catch(e){} }
   $("b-fb").onclick = function(){ show("s-fb"); };
+  /* ===== 플레이테스트 키트 연결: 기다리는 화면에서만, 한 번 탭으로 묻는다 ===== */
+  var LANG_CODE = "th", PT_Q = {
+    clear:{q:"คำถามเมื่อกี้ เข้าใจความหมายทันทีไหม", opts:["เข้าใจทันที","งงนิดหน่อย","ไม่ค่อยเข้าใจ"]},
+    feel:{q:"หลังดูฉากที่ผ่านมา ความรู้สึกที่เหลืออยู่ใกล้กับข้อไหนที่สุด", opts:["อยากรู้ต่อ","จุกในอก","เฉยๆ","งง","น่าเบื่อ"]},
+    more:{q:"ดูมาถึงตรงนี้ อยากดูต่อไหม", opts:["อยากดูต่อ","เฉยๆ","อยากหยุดแล้ว"]}
+  };
+  function ptCtx(){ var X = CROSS[ci] || {}; return {age:X.age, n:WORDS.length}; }
+  function ptScreen(id){
+    PT.event("screen", {id:id, age:(CROSS[ci] || {}).age, n:WORDS.length});
+    if(id !== "s-wait2"){ PT.closeBubble(); }
+    if(id === "s-wait2"){
+      var n = WORDS.length, age = (CROSS[ci] || {}).age || 0, k = null;
+      if(n === 1) k = "clear"; else if(n === 3) k = "feel"; else if(age >= 25) k = "more";
+      if(k) PT.pulse(k, {q:PT_Q[k].q, opts:PT_Q[k].opts, delay:900, ctx:ptCtx()});
+    }
+    if(id === "s-end") PT.event("end", {death:st.deathAge || null, mins:Math.round(playedMs() / 60000), path:WORDS.map(function(w){ return w.age + w.c + (w.c === "C" ? "-" : w.followed ? (w.kept ? "✓" : "△") : (w.kept ? "○" : "✗")); }).join(" ")});
+  }
+  function fbObj(){
+    return {name:$("f-name").value.trim(), mood:FB.mood || null, lost:$("f-lost").value.trim(), scene:$("f-scene").value.trim(),
+      long:$("f-long").value.trim(), again:FB.again || null, rec:FB.rec || null, words:$("f-words").value.trim(), slip:FB.slip || null,
+      death:st.deathAge || null, mins:Math.max(1, Math.round(playedMs() / 60000)), text:fbText()};
+  }
   $("b-fb-home").onclick = function(){ newLife(); show("s-box"); };
   $("b-line").onclick = function(){
+    var btn = $("b-line"); if(btn.disabled) return; btn.disabled = true; btn.textContent = SENDING_TXT;
+    var o = fbObj();
+    if(window.PT && PT.survey){
+      PT.survey("end", o).then(function(ok){
+        if(ok){ btn.textContent = SENT_TXT; $("f-done").hidden = false; }
+        else { btn.disabled = false; btn.textContent = RETRY_TXT; lineShare(); }
+      });
+      return;
+    }
+    lineShare();
+  };
+  function lineShare(){
     var t = fbText(), url = "https://line.me/R/share?text=" + encodeURIComponent(t), w = null;
     try{ w = window.open(url, "_blank", "noopener"); }catch(e){ w = null; }
     if(!w){ showOut(t); }
     $("f-done").hidden = false;
-  };
+  }
+  var SENDING_TXT = "กำลังส่ง…", SENT_TXT = "ส่งแล้ว", RETRY_TXT = "ส่งทาง LINE แทน";
   $("b-copy").onclick = function(){
     var t = fbText();
     var done = function(){ $("f-done").hidden = false; $("b-copy").textContent = "คัดลอกแล้ว"; };
@@ -1892,6 +2037,8 @@ body{line-height:1.75}
     }
   }, true);
   document.addEventListener("pointerdown", function(){ $("app").classList.remove("monoing"); }, true);
+  if(window.PT) PT.init({game:"sangja", build:"v35", lang:LANG_CODE, endpoint:"https://nrcyoqajqqbuwazlrbpa.supabase.co",
+    key:"sb_publishable_XSDekoMOwFTaiNcrLSvYKg_fsj-XnQs", maxPulses:3, gapMs:60000, strings:{thanks:"ขอบคุณนะ", skip:"×"}});
 })();
 </script>
 </body></html>
