@@ -560,6 +560,7 @@ body{font-size:17.5px}
 .idrows{margin:0;display:flex;flex-direction:column;gap:8px}
 .idrows div{display:grid;grid-template-columns:5.4em 1fr;gap:8px;font-size:14.5px;line-height:1.45;border-bottom:1px dotted rgba(36,32,26,.35);padding-bottom:6px}
 .idrows dt{color:#5E5242;font-size:13px}.idrows dd{margin:0}
+#s-q .voice .mirror{margin-top:6px;font-size:14.5px;color:var(--glow);opacity:.9;font-style:italic}
 /* ===== 사진기를 크게, 테두리는 얇게 (11/1): 그림이 주인공 ===== */
 /* 얇은 틀(obscura_thin): 유리 창 = 정확히 87.6%, 모든 상자 화면이 이 하나를 기준으로 */
 .box{width:min(96%,52vh)}
@@ -595,6 +596,21 @@ body{font-size:17.5px}
     <button class="btn resume" id="b-resume" type="button" hidden></button>
     <button class="btn" id="b-open" type="button">상자를 연다</button>
     <p class="btn-note">이전 주인이 지켜본 한 사람의 일생이다</p>
+  </section>
+
+  <section class="screen paper" id="s-mirror" hidden>
+    <div class="album-head"><span class="t">상자 안의 쪽지</span><span class="y">세 가지만</span></div>
+    <p class="album-sub">들여다보기 전에, 당신에 대해 적어 두세요. 이야기 속에서 조용히 다시 나타납니다.</p>
+    <div class="fb">
+      <p class="fq">여덟 살 때, 당신은 학교에 다녔나요?</p>
+      <div class="fchips" id="mq-school"><button type="button" class="fchip" data-v="yes">다녔다</button><button type="button" class="fchip" data-v="some">다니다 말다 했다</button><button type="button" class="fchip" data-v="no">못 다녔다</button></div>
+      <p class="fq">형제자매가 있었나요?</p>
+      <div class="fchips" id="mq-sib"><button type="button" class="fchip" data-v="yes">있었다</button><button type="button" class="fchip" data-v="no">없었다</button></div>
+      <p class="fq">요즘 가장 마음이 쓰이는 사람은?</p>
+      <div class="fchips" id="mq-care"><button type="button" class="fchip" data-v="parents">부모님</button><button type="button" class="fchip" data-v="child">아이</button><button type="button" class="fchip" data-v="partner">곁에 있는 사람</button><button type="button" class="fchip" data-v="self">나 자신</button></div>
+    </div>
+    <button class="btn" id="b-mirror" type="button" style="margin-top:22px" disabled>상자를 들여다본다</button>
+    <button class="btn demo" id="b-mirror-skip" type="button" style="margin-top:4px">적지 않고 들여다본다</button>
   </section>
 
   <section class="screen" id="s-lens" hidden>
@@ -986,7 +1002,7 @@ body{font-size:17.5px}
   /* ===== 갈림길들: 앞에서 건넨 말이 뒤의 상황을 바꾼다. 기본 확률은 모두 가정값 ===== */
   var ENGINE2 = {follow:0.60};
   var st, WORDS, ci, lastWord, lastPick = {};
-  function newLife(){ st = {track:null, married:false, dakar:false, place:"banou", trust:50, money:1, health:1, kids:0, primary:false, child_married:false, spark:0, deathAge:null}; WORDS = []; ci = 0; lastPick = {}; }
+  function newLife(){ st = {track:null, married:false, dakar:false, place:"banou", trust:50, money:1, health:1, kids:0, primary:false, child_married:false, spark:0, deathAge:null}; WORDS = []; ci = 0; lastPick = {}; try{ st.first = !localStorage.getItem("sangja_done"); }catch(e){ st.first = true; } }
   newLife();
   function pct(x){ return Math.round(x*100)+"%"; }
   var MARRY_BARS = {kind:"bars", lbl:"18세 전에 혼인한 여성 (20~24세)", rows:[["농촌",41.3],["도시",17.9],["빈곤층",54.4],["부유층",13]], unit:"%", s:"2023 · UNICEF (childmarriagedata.org)"};
@@ -1520,8 +1536,8 @@ body{font-size:17.5px}
   }
   Array.prototype.forEach.call(document.querySelectorAll(".mono"), function(el){ el.addEventListener("click", skipMono); });
 
-  var screens = ["s-box","s-lens","s-album","s-wait","s-q","s-wait2","s-result","s-end","s-close","s-fb"];
-  var PAPER = {"s-album":1,"s-result":1,"s-end":1,"s-fb":1};
+  var screens = ["s-box","s-mirror","s-lens","s-album","s-wait","s-q","s-wait2","s-result","s-end","s-close","s-fb"];
+  var PAPER = {"s-mirror":1,"s-album":1,"s-result":1,"s-end":1,"s-fb":1};
   function show(id){
     screens.forEach(function(s){ $(s).hidden = (s !== id); });
     $("dust").hidden = !!PAPER[id];
@@ -1529,7 +1545,7 @@ body{font-size:17.5px}
     if(id === "s-lens"){ var l=$("lens-box"); l.classList.remove("approach"); void l.offsetWidth; l.classList.add("approach"); }
     if(id === "s-q"){ resetQuestion(); if(typeof saveLife === "function") saveLife(); }
     if(window.PT) ptScreen(id);
-    if(id === "s-end"){ if(typeof clearSave === "function"){ if(mark){ played += Date.now() - mark; mark = null; } clearSave(); } }
+    if(id === "s-end"){ try{ localStorage.setItem("sangja_done", "1"); }catch(e){} if(typeof clearSave === "function"){ if(mark){ played += Date.now() - mark; mark = null; } clearSave(); } }
     clearMono(); runMono(id);
     if(typeof sceneSound === "function") sceneSound(id);
   }
@@ -1615,7 +1631,8 @@ body{font-size:17.5px}
   function renderVoice(lines){
     var d = function(i){ return (0.2 + i*1.15).toFixed(2); };
     $("voice").innerHTML = lines.map(function(l, i){ return '<p style="animation-delay:'+d(i)+'s">'+esc(l)+'</p>'; }).join("")
-      + '<p class="ask" style="animation-delay:'+(0.5 + lines.length*1.15).toFixed(2)+'s">'+esc("어떻게 할까.")+'</p>';
+      + (function(){ var m = mirrorLine(CROSS[ci].age); return m ? '<p class="mirror" style="animation-delay:'+(0.3 + lines.length*1.15).toFixed(2)+'s">'+esc(m)+'</p>' : ''; })()
+      + '<p class="ask" style="animation-delay:'+(0.5 + lines.length*1.15 + (mirrorLine(CROSS[ci].age) ? 1.1 : 0)).toFixed(2)+'s">'+esc("어떻게 할까.")+'</p>';
   }
   function resetQuestion(){
     busy = false;
@@ -1706,7 +1723,40 @@ body{font-size:17.5px}
   $("r-prev").onclick = function(){ if(rp>0){ rp=0; rFlipped=false; $("r-page").classList.remove("still"); renderResult(); } };
   $("r-next").onclick = function(){ if(rp<1){ rp=1; rFlipped=false; clearMono(); $("r-page").classList.remove("still"); renderResult(); } };
 
-  $("b-open").onclick = function(){ newLife(); clearSave(); show("s-lens"); };
+  $("b-open").onclick = function(){ newLife(); clearSave(); var m = loadMirror(); if(m){ st.mirror = m; show("s-lens"); } else show("s-mirror"); };
+  /* ===== 거울 질문: 플레이어를 먼저 묻고, 같은 나이의 아미나타 옆에 조용히 다시 꺼낸다 ===== */
+  var MQ = {};
+  function loadMirror(){ try{ var t = localStorage.getItem("sangja_mirror"); return t ? JSON.parse(t) : null; }catch(e){ return null; } }
+  ["school","sib","care"].forEach(function(k){
+    $("mq-" + k).onclick = function(e){
+      var b = e.target.closest("button"); if(!b) return;
+      Array.prototype.forEach.call($("mq-" + k).querySelectorAll("button"), function(x){ x.classList.toggle("on", x === b); });
+      MQ[k] = b.getAttribute("data-v");
+      $("b-mirror").disabled = !(MQ.school && MQ.sib && MQ.care);
+    };
+  });
+  $("b-mirror").onclick = function(){
+    st.mirror = {school:MQ.school, sib:MQ.sib, care:MQ.care};
+    try{ localStorage.setItem("sangja_mirror", JSON.stringify(st.mirror)); }catch(e){}
+    if(window.PT) PT.event("mirror", st.mirror);
+    show("s-lens");
+  };
+  $("b-mirror-skip").onclick = function(){ st.mirror = null; if(window.PT) PT.event("mirror", {skipped:1}); show("s-lens"); };
+  var MIRROR = {
+    8:{school:{yes:"여덟 살의 당신은 교실에 있었다.", some:"여덟 살의 당신도 학교와 집안일 사이 어딘가에 있었다.", no:"여덟 살의 당신도 학교 밖에 있었다."}},
+    9:{sib:{yes:"당신에게도 형제가 있었다.", no:"당신에게는 업어 줄 동생이 없었다."}},
+    20:{care:{partner:"당신 곁의 그 사람을 떠올린다."}},
+    23:{care:{parents:"당신도 요즘 부모님이 가장 마음에 쓰인다고 했다."}},
+    27:{care:{child:"당신이 마음 쓰는 아이도, 언젠가 이런 갈림길에 선다."}},
+    36:{care:{child:"당신의 아이라면, 무엇을 바랐을까."}},
+    39:{care:{parents:"당신의 부모님을 떠올린다."}},
+    42:{care:{self:"당신이 마음 쓰는 '나 자신'을, 아미나타도 이제야 챙긴다."}}
+  };
+  function mirrorLine(age){
+    var m = st.mirror, e = MIRROR[age]; if(!m || !e) return null;
+    for(var k in e){ if(m[k] && e[k][m[k]]) return e[k][m[k]]; }
+    return null;
+  }
   $("b-album").onclick = function(){ ai=0; aFlipped=false; settleAlbum(); show("s-album"); };
   /* 해가 지는 6초: 명판의 시각이 흐르고, 유리판의 빛이 식은 뒤 첫 질문으로 */
   var DUSK = ["현지 오후 2:05","현지 오후 3:40","현지 오후 5:10","현지 오후 6:30","현지 오후 7:45","현지 오후 8:40"], duskTimers = [];
@@ -1738,7 +1788,7 @@ body{font-size:17.5px}
       for(var k = 0; k < EVENTS.length && !ev; k++){ if(roll() < EVENTS[k].p(y, a)) ev = EVENTS[k]; }
       if(ev){ ev.fx(); }
       list.push(YEARFMT.replace("{y}", y).replace("{a}", a + ageUnit(a))); cues.push(ev ? ev.t.replace("{y}", y) : null);
-      if(roll() < hazard(a)){
+      if(roll() < hazard(a) && !(st.first && a < 67)){
         st.deathAge = a;
         cues[cues.length - 1] = DEATH_FMT.replace("{y}", y);
         runPlate(list, GAPS[Math.min(6, list.length)], cues, function(){ renderLife(); show("s-end"); });
