@@ -561,6 +561,10 @@ body{font-size:17.5px}
 .idrows div{display:grid;grid-template-columns:5.4em 1fr;gap:8px;font-size:14.5px;line-height:1.45;border-bottom:1px dotted rgba(36,32,26,.35);padding-bottom:6px}
 .idrows dt{color:#5E5242;font-size:13px}.idrows dd{margin:0}
 #s-q .voice .mirror{margin-top:6px;font-size:14.5px;color:var(--glow);opacity:.9;font-style:italic}
+.habit-w{margin-top:20px}
+.habit-list{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:9px}
+.habit-list li{font-size:15px;line-height:1.6;padding-left:14px;position:relative}
+.habit-list li::before{content:"";position:absolute;left:0;top:.72em;width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.55}
 /* ===== 사진기를 크게, 테두리는 얇게 (11/1): 그림이 주인공 ===== */
 /* 얇은 틀(obscura_thin): 유리 창 = 정확히 87.6%, 모든 상자 화면이 이 하나를 기준으로 */
 .box{width:min(96%,52vh)}
@@ -729,6 +733,7 @@ body{line-height:1.75}
     <p class="album-sub">ชีวิตหนึ่งชีวิต ที่ต่างไปตามคำที่คุณเลือก</p>
     <div class="life-grid" id="life-grid"></div>
     <div class="note-w" style="align-self:center;margin-top:22px"><div class="note"><p id="end-years">2018 ~ 2089.</p><p id="end-line">เจ็ดสิบเอ็ดปี ที่หมู่บ้านบานู แคว้นตีแยส</p></div></div>
+    <div class="clip-w habit-w"><div class="clip habit"><div class="mast"><span class="name">อัลบั้มของอามินาตา</span><span>เกี่ยวกับคุณ</span></div><p class="ttl">นิสัยของคำที่คุณส่งไป</p><ul class="habit-list" id="habit-list"></ul></div></div>
     <div class="clip-w words-w"><div class="clip words"><div class="mast"><span class="name">อัลบั้มของอามินาตา</span><span>ปกหลังด้านใน</span></div><p class="ttl">คำที่ฉันส่งไป</p><ol class="word-list" id="word-list"></ol></div></div>
     <div class="nottaken" id="nottaken-w"><p class="nt-head">ทางที่ไม่ได้เลือก</p><p class="nt-sub">ถ้าทำตามคำนั้น</p><div class="nt-list" id="nt-list"></div></div>
     <div class="clip-w luck-w"><div class="clip fact">
@@ -1849,6 +1854,7 @@ body{line-height:1.75}
     $("word-list").innerHTML = groups.length ? groups.map(function(g, gi){
       return '<li class="wg"><details'+(gi === groups.length - 1 ? ' open' : '')+'><summary>'+esc(g.name)+' · '+g.items.length+'</summary><ol class="word-sub">'+g.items.map(item).join("")+'</ol></details></li>';
     }).join("") : '<li><span class="wa">–</span><span class="ww">…</span><span class="wr">'+esc("ยังไม่ได้ส่งคำใด")+'</span></li>';
+    renderHabit();
     var LR = [["มีชีวิตเกินห้าขวบ", 0.963, true], ["เรียนจบชั้นประถม", 0.58, !!st.primary], ["ไม่แต่งงานก่อนอายุสิบแปด", 0.587, !st.child_married], ["มีชีวิตเกินหกสิบห้าปี", 0.765, st.deathAge >= 65]];
     var prod = LR.reduce(function(m, r){ return m * (r[2] ? r[1] : 1 - r[1]); }, 1);
     $("luck-rows").innerHTML = LR.map(function(r){
@@ -1869,6 +1875,37 @@ body{line-height:1.75}
     }).join("");
   }
   $("b-end").onclick = function(){ finishLife(); renderLife(); show("s-end"); };
+  /* ===== 말의 습관: 건넨 말을 '나아가라 / 지키라' 한 축으로 읽어 끝 화면에 돌려준다 ===== */
+  var GO = {8:"A",9:"A",12:"A",13:"A",14:"A",15:"A",16:"A",17:"B",18:"A",20:"A",21:"A",22:"A",23:"B",25:"A",27:"A",29:"A",33:"A",36:"A",42:"A",45:"A",48:"A",52:"A",66:"A"};
+  var FAM = {8:"B",12:"B",17:"A",23:"A",39:"A"}, HEART = {15:"A",20:"A",36:"A"};
+  var HB = {
+    go:"คุณบอกอามินาตาแทบทุกครั้งว่า “ก้าวไปข้างหน้าอีกก้าว”",
+    keep:"คุณบอกอามินาตาแทบทุกครั้งว่า “อยู่ตรงที่เดิมไว้ก่อน”",
+    mix:"คุณสลับกันบอกทั้ง “ก้าวไปข้างหน้า” และ “อยู่ที่เดิม”",
+    fam:"คุณบอกให้ดูแลครอบครัวก่อน {n} ครั้ง",
+    famMirror:"คุณที่บอกว่าห่วงพ่อแม่ที่สุด ก็บอกอามินาตาให้ดูแลครอบครัวก่อนเหมือนกัน",
+    heartNo:"เรื่องแต่งงาน คุณไม่เคยปล่อยให้เธอเลือกตามใจตัวเองเลย",
+    heartYes:"เรื่องแต่งงาน คุณปล่อยให้เธอเลือกตามใจตัวเองเสมอ",
+    follow:"จากคำที่ส่งไป {s} ครั้ง อามินาตาทำตาม {f} ครั้ง",
+    silent:"ทางแยกที่คุณแค่มองดูเงียบ ๆ มี {z} ครั้ง",
+    ends:"คำแรกที่ส่งไปคือ {a} คำสุดท้ายคือ {b}"
+  };
+  function renderHabit(){
+    var spoken = WORDS.filter(function(w){ return w.c !== "C"; }), L = [];
+    var tagged = spoken.filter(function(w){ return GO[w.age]; }), g = tagged.filter(function(w){ return GO[w.age] === w.c; }).length;
+    if(tagged.length >= 3){ var r = g / tagged.length; L.push(r >= 0.7 ? HB.go : r <= 0.3 ? HB.keep : HB.mix); }
+    var fam = spoken.filter(function(w){ return FAM[w.age] === w.c; }).length;
+    if(fam >= 2) L.push(st.mirror && st.mirror.care === "parents" ? HB.famMirror : HB.fam.replace("{n}", fam));
+    var hs = spoken.filter(function(w){ return HEART[w.age]; });
+    if(hs.length >= 2){ var hy = hs.filter(function(w){ return HEART[w.age] === w.c; }).length; if(hy === 0) L.push(HB.heartNo); else if(hy === hs.length) L.push(HB.heartYes); }
+    var f = spoken.filter(function(w){ return w.followed && w.kept; }).length, z = WORDS.length - spoken.length;
+    if(spoken.length) L.push(HB.follow.replace("{s}", spoken.length).replace("{f}", f));
+    if(z > 0) L.push(HB.silent.replace("{z}", z));
+    if(spoken.length >= 2) L.push(HB.ends.replace("{a}", spoken[0].word).replace("{b}", spoken[spoken.length - 1].word));
+    $("habit-list").innerHTML = L.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join("");
+    $("habit-list").parentNode.parentNode.hidden = !L.length;
+    if(window.PT) PT.event("habit", {go:g, tagged:tagged.length, fam:fam, heart:hs.map(function(w){ return w.age + w.c; }).join(" "), spoken:spoken.length, followed:f, silent:z});
+  }
   $("slips").onclick = function(e){
     var b = e.target.closest(".slip"); if(!b) return;
     FB.slip = b.textContent;
